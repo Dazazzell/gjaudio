@@ -243,16 +243,6 @@ zz
   try {
     const response = await fetch(oEmbedURL);
     if (!response.ok) throw new Error("Invalid YouTube ID");
-
-async function addTrackIfUnique(title, level, youtubeId) {
-  // Check if the YouTube ID already exists
-  const q = query(collection(db, "tracks"), where("youtubeId", "==", youtubeId));
-  const existing = await getDocs(q);
-
-  if (!existing.empty) {
-    alert("A track with this YouTube ID already exists.");
-    return;
-  }
     
     // Proceed to add track
     await addDoc(collection(db, "tracks"), {
