@@ -5,22 +5,22 @@
   <title>MP3 Voting</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
-  <style>
-  /* Adjusting canvas height to 20% of viewport height */
+<style>
+  /* Adjust canvas height to 20% of the viewport height */
   canvas {
-    height: 20vh; /* 20% of the viewport height */
-    width: 80%;  /* 100% of the width */
+    height: 20vh !important;  /* Force canvas height to be 20% of viewport height */
+    width: 100% !important;   /* Ensure canvas width is 100% of its container */
   }
 
-  /* Optional: Style for the charts container to better align content */
+  /* Optional: Style for the charts container to ensure proper spacing */
   #charts-container {
     width: 100%;
-    margin-top: 20px;  /* Space between tracks and charts */
+    margin-top: 20px;
   }
 
-  /* Optionally, style the individual chart containers */
+  /* Optional: Adjust margins between charts */
   #charts-container div {
-    margin-bottom: 20px;  /* Space between each chart */
+    margin-bottom: 20px;
   }
 </style>
 </head>
