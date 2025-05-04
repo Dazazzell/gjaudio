@@ -233,7 +233,9 @@
   const title = document.getElementById('title').value.trim();
   const youtube = document.getElementById('youtube').value.trim();
   const level = document.getElementById('level').value;
-  return;
+  if (!title || !youtube || !level) {
+    //alert("All fields are required.");
+    return;
   }
 
   // Validate YouTube ID using oEmbed
