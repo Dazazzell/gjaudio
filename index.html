@@ -5,6 +5,12 @@
   <title>MP3 Voting</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+  <style>
+    canvas {
+      height: 20vh; /* 20% of the viewport height */
+      width: 60%; /* 60% of the width */
+    }
+  </style>
 </head>
 <body>
   <h1>Vote for Your Favorite Tracks</h1>
@@ -31,59 +37,16 @@
     await signInAnonymously(auth);
 
     const tracks = [
-      { id: 'track1', title: 'Track 1', mp3: 'https://djangojazzcalgary.wordpress.com/wp-content/uploads/2025/05/track1.mp3', level: 'JM' },
-      { id: 'track2', title: 'Track 2', mp3: 'https://djangojazzcalgary.wordpress.com/wp-content/uploads/2025/05/track2.mp3', level: 'JSGM' },
-      { id: 'track3', title: 'Track 3', mp3: 'https://djangojazzcalgary.wordpress.com/wp-content/uploads/2025/05/track3.mp3', level: 'JSGM' },
+      { id: 'track1', title: 'Track 1', mp3: 'https://djangojazzcalgary.wordpress.com/wp-content/uploads/2025/05/track1.mp3', level: 'easy' },
+      { id: 'track2', title: 'Track 2', mp3: 'https://djangojazzcalgary.wordpress.com/wp-content/uploads/2025/05/track2.mp3', level: 'medium' },
+      { id: 'track3', title: 'Track 3', mp3: 'https://djangojazzcalgary.wordpress.com/wp-content/uploads/2025/05/track3.mp3', level: 'hard' },
     ];
 
     const container = document.getElementById('track-list');
     const chartsContainer = document.getElementById('charts-container');
     let charts = {};
 
-    for (const track of tracks) {
-      const div = document.createElement('div');
-      div.innerHTML = `
-        <h3>* ${track.title}</h3>
-        <audio controls src="${track.mp3}"></audio>
-        <div>
-          ${[...Array(10)].map((_, i) =>
-            `<button data-score="${i+1}" data-id="${track.id}">${i+1}</button>`
-          ).join(' ')}
-        </div>
-        <p id="result-${track.id}">Loading results...</p>
-      `;
-      container.appendChild(div);
-
-      updateResults(track.id);
-
-      div.querySelectorAll('button').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const score = btn.dataset.score;
-          const id = btn.dataset.id;
-          const user = auth.currentUser;
-
-          if (!user) {
-            alert("User not signed in");
-            return;
-          }
-
-          const voteRef = doc(db, "votes", `${user.uid}_${id}`);
-          try {
-            await setDoc(voteRef, {
-              score: Number(score),
-              trackId: id,
-              user: user.uid
-            });
-            alert(`Voted ${score} on ${track.title}`);
-            updateResults(id);
-          } catch (err) {
-            console.error("Error saving vote:", err);
-            alert("Failed to vote.");
-          }
-        });
-      });
-    }
-
+    // Function to update the results for a single track
     async function updateResults(trackId) {
       const q = query(collection(db, "votes"), where("trackId", "==", trackId));
       const querySnapshot = await getDocs(q);
@@ -95,9 +58,12 @@
       const avg = count > 0 ? (total / count).toFixed(2) : null;
       document.getElementById(`result-${trackId}`).textContent =
         avg ? `Average score: ${avg} (${count} vote${count > 1 ? 's' : ''})` : "No votes yet";
+
+      // Update chart after results are updated
       updateChart();
     }
 
+    // Function to update the chart for all tracks, grouped by level
     async function updateChart() {
       const levels = {};
 
@@ -118,6 +84,7 @@
         levels[track.level].voteCounts.push(count);
       }
 
+      // Now create the charts only for each level (easy, medium, hard)
       for (const level in levels) {
         const data = {
           labels: levels[level].labels,
@@ -174,7 +141,53 @@
       }
     }
 
-    updateChart();
+    // Create the track list and initialize voting buttons
+    for (const track of tracks) {
+      const div = document.createElement('div');
+      div.innerHTML = `
+        <h3>* ${track.title}</h3>
+        <audio controls src="${track.mp3}"></audio>
+        <div>
+          ${[...Array(10)].map((_, i) =>
+            `<button data-score="${i+1}" data-id="${track.id}">${i+1}</button>`
+          ).join(' ')}
+        </div>
+        <p id="result-${track.id}">Loading results...</p>
+      `;
+      container.appendChild(div);
+
+      // Initially update the results for each track
+      updateResults(track.id);
+
+      // Add event listeners for voting
+      div.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const score = btn.dataset.score;
+          const id = btn.dataset.id;
+          const user = auth.currentUser;
+
+          if (!user) {
+            alert("User not signed in");
+            return;
+          }
+
+          const voteRef = doc(db, "votes", `${user.uid}_${id}`);
+          try {
+            await setDoc(voteRef, {
+              score: Number(score),
+              trackId: id,
+              user: user.uid
+            });
+            alert(`Voted ${score} on ${track.title}`);
+            updateResults(id);
+          } catch (err) {
+            console.error("Error saving vote:", err);
+            alert("Failed to vote.");
+          }
+        });
+      });
+    }
+
   </script>
 </body>
 </html>
