@@ -7,23 +7,41 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
   <style>
     #charts-container {
-      width: 60%;
-      margin-top: 30px;
+      width: 50%;
+      margin-top: 20px;
     }
     iframe {
-      max-width: 100%;
-      margin: 10px 0;
+      width: 100%;
+      height: 200px;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
   <h2>YouTube Track Voting</h2>
+
+  <form id="add-track-form">
+    <h3>Add New Track</h3>
+    <label>Title: <input type="text" id="title" required /></label><br>
+    <label>YouTube ID: <input type="text" id="youtube" required /></label><br>
+    <label>
+      Level:
+      <select id="level" required>
+        <option value="JSGM">JSGM</option>
+        <option value="JM">JM</option>
+        <option value="JIM">JIM</option>
+      </select>
+    </label><br><br>
+    <button type="submit">Add Track</button>
+  </form>
+
+  <hr>
   <div id="track-list"></div>
   <div id="charts-container"></div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getFirestore, doc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, collection, query, where, getDocs, getDoc, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -66,10 +84,12 @@
       oscillator.stop(context.currentTime + 0.4);
     }
 
-    async function loadTracks() {
-      const querySnapshot = await getDocs(collection(db, "tracks"));
-      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    }
+    // Load tracks from Firestore
+    const tracks = [];
+    const snapshot = await getDocs(collection(db, "tracks"));
+    snapshot.forEach(doc => {
+      tracks.push({ id: doc.id, ...doc.data() });
+    });
 
     async function updateResults(trackId) {
       const q = query(collection(db, "votes"), where("trackId", "==", trackId));
@@ -87,8 +107,6 @@
 
     async function updateChart() {
       const levels = {};
-      const tracks = await loadTracks();
-
       for (const track of tracks) {
         const q = query(collection(db, "votes"), where("trackId", "==", track.id));
         const querySnapshot = await getDocs(q);
@@ -163,17 +181,15 @@
       }
     }
 
-    // Initialize
-    const tracks = await loadTracks();
     for (const track of tracks) {
       const div = document.createElement('div');
       div.innerHTML = `
         <br>
-        <h3>- ${track.title} - ${track.level}</h3>
-        <iframe width="420" height="236" src="https://www.youtube.com/embed/${track.youtube}" frameborder="0" allowfullscreen></iframe>
+        <h3>- ${track.title} (${track.level})</h3>
+        <iframe src="https://www.youtube.com/embed/${track.youtube}" frameborder="0" allowfullscreen></iframe>
         <div>
           ${[...Array(10)].map((_, i) =>
-            `<button data-score="${i + 1}" data-id="${track.id}">${i + 1}</button>`
+            `<button data-score="${i+1}" data-id="${track.id}">${i+1}</button>`
           ).join(' ')}
         </div>
         <p id="result-${track.id}">Loading results...</p>
@@ -186,12 +202,10 @@
           const score = btn.dataset.score;
           const id = btn.dataset.id;
           const user = auth.currentUser;
-
           if (!user) {
             alert("User not signed in");
             return;
           }
-
           const voteRef = doc(db, "votes", `${user.uid}_${id}`);
           try {
             await setDoc(voteRef, {
@@ -200,7 +214,6 @@
               user: user.uid
             });
             ding();
-            console.log(`Voted ${score} on ${track.title}`);
             updateResults(id);
           } catch (err) {
             console.error("Error saving vote:", err);
@@ -209,6 +222,30 @@
         });
       });
     }
+
+    // Add new track form handler
+    document.getElementById('add-track-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('title').value.trim();
+      const youtube = document.getElementById('youtube').value.trim();
+      const level = document.getElementById('level').value;
+      if (!title || !youtube || !level) {
+        alert("All fields are required.");
+        return;
+      }
+      try {
+        await addDoc(collection(db, "tracks"), {
+          title,
+          youtube,
+          level
+        });
+        alert("Track added!");
+        location.reload();
+      } catch (err) {
+        console.error("Error adding track:", err);
+        alert("Failed to add track.");
+      }
+    });
   </script>
 </body>
 </html>
