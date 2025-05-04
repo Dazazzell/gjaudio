@@ -28,14 +28,12 @@
       .setProject("6817cbb2002532589942");
 
     const account = new Appwrite.Account(client);
-try {
-  const session = await account.get();
-  console.log('Session already active:', session);
-} catch (error) {
-  // No active session, so create one
-  await account.createAnonymousSession();
-  console.log('New anonymous session created');
-}
+
+    // Log out current session (if any)
+await account.deleteSession('current');  // 'current' deletes the active session
+
+// Now create a new anonymous session
+await account.createAnonymousSession();
     
     const db = new Appwrite.Databases(client);
     const storage = new Appwrite.Storage(client);
