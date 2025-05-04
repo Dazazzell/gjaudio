@@ -50,7 +50,7 @@
     const chartsContainer = document.getElementById('charts-container');
     let charts = {};
 
-function beep(frequency = 440, duration = 150, volume = 1) {
+function beep(frequency = 660, duration = 200, volume = 0) {
   const context = new (window.AudioContext || window.webkitAudioContext)();
   const oscillator = context.createOscillator();
   const gain = context.createGain();
