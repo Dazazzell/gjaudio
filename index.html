@@ -94,7 +94,7 @@
     snapshot.forEach(doc => {
       tracks.push({ id: doc.id, ...doc.data() });
     });
-zz
+
     async function updateResults(trackId) {
       const q = query(collection(db, "votes"), where("trackId", "==", trackId));
       const querySnapshot = await getDocs(q);
@@ -243,7 +243,7 @@ zz
   try {
     const response = await fetch(oEmbedURL);
     if (!response.ok) throw new Error("Invalid YouTube ID");
-    
+
     // Proceed to add track
     await addDoc(collection(db, "tracks"), {
       title,
