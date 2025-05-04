@@ -5,6 +5,7 @@
   <title>MP3 Voting with Appwrite</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+  <!-- Use the Appwrite SDK via a script tag, no module needed -->
   <script src="https://cdn.jsdelivr.net/npm/appwrite@13.0.0"></script>
   <style>
     #charts-container {
@@ -23,9 +24,6 @@
   <div id="charts-container"></div>
 
   <script type="module">
-    // Import Appwrite SDK as default
-    import Appwrite from 'https://cdn.jsdelivr.net/npm/appwrite@13.0.0';
-
     const client = new Appwrite.Client()
       .setEndpoint("https://cloud.appwrite.io/v1") // or your self-hosted URL
       .setProject("6817cbb2002532589942");
