@@ -27,13 +27,26 @@
       .setEndpoint("https://cloud.appwrite.io/v1") // or your self-hosted URL
       .setProject("6817cbb2002532589942");
 
-    const account = new Appwrite.Account(client);
+const account = new Account(client);
 
-    // Log out current session (if any)
-await account.deleteSession('current');  // 'current' deletes the active session
-
-// Now create a new anonymous session
-await account.createAnonymousSession();
+try {
+  // Check if an active session exists
+  const session = await account.get(); 
+  console.log('Session already active:', session);
+} catch (error) {
+  if (error.code === 401) {
+    // No active session, so create a new anonymous session
+    try {
+      await account.createAnonymousSession();
+      console.log('New anonymous session created');
+    } catch (err) {
+      console.error('Failed to create session:', err);
+    }
+  } else {
+    // Handle any other unexpected errors
+    console.error('Error while checking session:', error);
+  }
+}
     
     const db = new Appwrite.Databases(client);
     const storage = new Appwrite.Storage(client);
