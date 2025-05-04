@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MP3 Voting</title>
+  <style>
+    .track { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+    .votes button { margin: 2px; }
+    .voted { background-color: #4caf50; color: white; }
+  </style>
+</head>
+<body>
+
+  <div id="track-list"></div>
+
+  <script>
+    const tracks = [
+      { id: 'track1', title: 'Track One', mp3: 'track1.mp3' },
+      { id: 'track2', title: 'Track Two', mp3: 'track2.mp3' },
+      { id: 'track3', title: 'Track Three', mp3: 'track3.mp3' },
+    ];
+
+    const trackList = document.getElementById('track-list');
+
+    function saveVote(trackId, score) {
+      localStorage.setItem(`vote_${trackId}`, score);
+    }
+
+    function getVote(trackId) {
+      return localStorage.getItem(`vote_${trackId}`);
+    }
+
+    tracks.forEach(track => {
+      const div = document.createElement('div');
+      div.className = 'track';
+      div.innerHTML = `
+        <h3>${track.title}</h3>
+        <audio controls src="${track.mp3}"></audio>
+        <div class="votes" id="votes-${track.id}">
+          ${[...Array(10)].map((_, i) =>
+            `<button data-score="${i+1}" data-track="${track.id}">${i+1}</button>`
+          ).join('')}
+        </div>
+      `;
+      trackList.appendChild(div);
+
+      const buttons = div.querySelectorAll('button');
+      buttons.forEach(button => {
+        button.addEventListener('click', () => {
+          const trackId = button.dataset.track;
+          const score = button.dataset.score;
+          saveVote(trackId, score);
+          highlightVote(trackId);
+        });
+      });
+
+      highlightVote(track.id);
+    });
+
+    function highlightVote(trackId) {
+      const votedScore = getVote(trackId);
+      const buttons = document.querySelectorAll(`#votes-${trackId} button`);
+      buttons.forEach(btn => {
+        btn.classList.toggle('voted', btn.dataset.score === votedScore);
+      });
+    }
+  </script>
+
+</body>
+</html>
