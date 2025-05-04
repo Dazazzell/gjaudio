@@ -6,10 +6,23 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
   <style>
-    canvas {
-      height: 200px;
-    }
-  </style>
+  /* Adjusting canvas height to 20% of viewport height */
+  canvas {
+    height: 20vh; /* 20% of the viewport height */
+    width: 80%;  /* 100% of the width */
+  }
+
+  /* Optional: Style for the charts container to better align content */
+  #charts-container {
+    width: 100%;
+    margin-top: 20px;  /* Space between tracks and charts */
+  }
+
+  /* Optionally, style the individual chart containers */
+  #charts-container div {
+    margin-bottom: 20px;  /* Space between each chart */
+  }
+</style>
 </head>
 <body>
   <h1>Vote for Your Favorite Tracks</h1>
