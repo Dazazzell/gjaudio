@@ -23,13 +23,14 @@
   <div id="charts-container"></div>
 
   <script type="module">
-    import { Client, Account, Databases, Storage } from 'https://cdn.jsdelivr.net/npm/appwrite@13.0.0';
+    // Import Appwrite SDK as default
+    import Appwrite from 'https://cdn.jsdelivr.net/npm/appwrite@13.0.0';
 
-    const client = new Client()
+    const client = new Appwrite.Client()
       .setEndpoint("https://cloud.appwrite.io/v1") // or your self-hosted URL
       .setProject("6817cbb2002532589942");
 
-    const account = new Account(client);
+    const account = new Appwrite.Account(client);
 
     try {
       // Check if an active session exists
@@ -50,8 +51,8 @@
       }
     }
     
-    const db = new Databases(client);
-    const storage = new Storage(client);
+    const db = new Appwrite.Databases(client);
+    const storage = new Appwrite.Storage(client);
 
     const databaseId = "6817cc0400031a2bec0f";
     const collectionId = "6817cc890034adeb219f";
