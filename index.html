@@ -89,7 +89,7 @@
       // Now create the charts only for each level
       for (const level in levels) {
         const randomNumber = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
-        const randomByte = () => randomNumber(0, 255)
+        const randomByte = () => randomNumber(0, 255);
         if (!charts[level]) {
           const data = {
             labels: levels[level].labels,
