@@ -2,145 +2,170 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>MP3 Voting with Appwrite</title>
+  <title>MP3 Voting</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
-  <!-- Use the Appwrite SDK via a script tag, no module needed -->
-  <script src="https://cdn.jsdelivr.net/npm/appwrite@13.0.0"></script>
-  <style>
-    #charts-container {
-      width: 50%;
-      margin-top: 20px;
-    }
-  </style>
+<style>
+  /* Optional: Style for the charts container to ensure proper spacing */
+  #charts-container {
+    width: 50%;
+    margin-top: 20px;
+  }
+</style>
 </head>
 <body>
-  <h2>Upload MP3</h2>
-  <input type="file" id="fileInput" accept="audio/mpeg" />
-  <button id="uploadBtn">Upload</button>
-  <br><br>
-
+  <div> Test test </div>
   <div id="track-list"></div>
+  <br>
   <div id="charts-container"></div>
-
   <script type="module">
-    const client = new Appwrite.Client()
-      .setEndpoint("https://cloud.appwrite.io/v1") // or your self-hosted URL
-      .setProject("6817cbb2002532589942");
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getFirestore, doc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-    const account = new Appwrite.Account(client);
+    const firebaseConfig = {
+      apiKey: "AIzaSyDp_cESC1PrXHxnTC2JMRdR928KXXwEvOw",
+      authDomain: "gjaudio-d18d9.firebaseapp.com",
+      projectId: "gjaudio-d18d9",
+      storageBucket: "gjaudio-d18d9.firebasestorage.app",
+      messagingSenderId: "740115381859",
+      appId: "1:740115381859:web:a19505a463269198274256"
+    };
 
-    try {
-      // Check if an active session exists
-      const session = await account.get(); 
-      console.log('Session already active:', session);
-    } catch (error) {
-      if (error.code === 401) {
-        // No active session, so create a new anonymous session
-        try {
-          await account.createAnonymousSession();
-          console.log('New anonymous session created');
-        } catch (err) {
-          console.error('Failed to create session:', err);
-        }
-      } else {
-        // Handle any other unexpected errors
-        console.error('Error while checking session:', error);
-      }
-    }
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    await signInAnonymously(auth);
+
+    const tracks = [
+      { id: 'track1', title: 'Track1 - Luigi', mp3: 'https://dodarchive.dwellingofduels.net/25-03-Free/06-Carington%20Swing-Luigis%20Mansion-Boos%20on%20the%20Loose%20Luigis%20Mansion%20Main%20Theme-DoD.mp3', level: 'JSGM' },
+      { id: 'track2', title: 'Track2 - Minor Swing', mp3: 'https://djangojazzcalgary.wordpress.com/wp-content/uploads/2025/05/track2.mp3', level: 'JSGM' },
+      { id: 'track3', title: 'Track3 - Minor Swing', mp3: 'https://djangojazzcalgary.wordpress.com/wp-content/uploads/2025/05/track3.mp3', level: 'JIM' },
+      { id: 'track4', title: 'Track4 - All of me', mp3: 'https://djangojazzcalgary.wordpress.com/wp-content/uploads/2025/05/track1.mp3', level: 'JM' },
+      { id: 'track5', title: 'Track5 - Minor Swing', mp3: 'https://djangojazzcalgary.wordpress.com/wp-content/uploads/2025/05/track2.mp3', level: 'JSGM' },
+      { id: 'track6', title: 'Track6 - All of me', mp3: 'https://djangojazzcalgary.wordpress.com/wp-content/uploads/2025/05/track3.mp3', level: 'JSGM' }
+    ];
+
+    const container = document.getElementById('track-list');
+    const chartsContainer = document.getElementById('charts-container');
+    let charts = {};
+
+function getRandomColor() {
+  const r = Math.floor(Math.random() * 200);
+  const g = Math.floor(Math.random() * 200);
+  const b = Math.floor(Math.random() * 200);
+  return `rgba(${r}, ${g}, ${b}, 0.6)`; // 0.6 for transparency
+}
     
-    const db = new Appwrite.Databases(client);
-    const storage = new Appwrite.Storage(client);
+function ding() {
+  const context = new (window.AudioContext || window.webkitAudioContext)();
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
 
-    const databaseId = "6817cc0400031a2bec0f";
-    const collectionId = "6817cc890034adeb219f";
-    const bucketId = "6817cc1700261a470236";
+  oscillator.type = 'triangle';           // Triangle wave sounds more like a ding
+  oscillator.frequency.setValueAtTime(880, context.currentTime); // A5 note
+  gain.gain.setValueAtTime(0.001, context.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.5, context.currentTime + 0.01); // Attack
+  gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.3); // Decay
 
-    let user = null;
+  oscillator.connect(gain);
+  gain.connect(context.destination);
+  oscillator.start(context.currentTime);
+  oscillator.stop(context.currentTime + 0.4); // Short ding
+}
 
-    const charts = {};
-    const tracks = []; // will be filled dynamically on upload
+    
+    // Function to update the results for a single track
+    async function updateResults(trackId) {
+      const q = query(collection(db, "votes"), where("trackId", "==", trackId));
+      const querySnapshot = await getDocs(q);
+      let total = 0, count = 0;
+      querySnapshot.forEach(doc => {
+        total += doc.data().score;
+        count++;
+      });
+      const avg = count > 0 ? (total / count).toFixed(2) : null;
+      document.getElementById(`result-${trackId}`).textContent =
+        avg ? `Average score: ${avg} (${count} vote${count > 1 ? 's' : ''})` : "No votes yet";
 
-    await account.createAnonymousSession();
-    user = await account.get();
-
-    function ding() {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const oscillator = ctx.createOscillator();
-      const gain = ctx.createGain();
-      oscillator.type = 'triangle';
-      oscillator.frequency.setValueAtTime(880, ctx.currentTime);
-      gain.gain.setValueAtTime(0.001, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.5, ctx.currentTime + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-      oscillator.connect(gain);
-      gain.connect(ctx.destination);
-      oscillator.start(ctx.currentTime);
-      oscillator.stop(ctx.currentTime + 0.4);
+      // Update chart after results are updated
+      updateChart();
     }
 
-    async function fetchVotes(trackId) {
-      const res = await db.listDocuments(databaseId, collectionId, [
-        Appwrite.Query.equal("trackId", trackId)
-      ]);
-      let total = 0;
-      res.documents.forEach(doc => total += doc.score);
-      return {
-        average: res.total > 0 ? (total / res.total).toFixed(2) : null,
-        count: res.total
-      };
-    }
-
+    // Function to update the chart for all tracks, grouped by level
     async function updateChart() {
       const levels = {};
+
+      // Group tracks by their level
       for (const track of tracks) {
-        const { average, count } = await fetchVotes(track.id);
+        const q = query(collection(db, "votes"), where("trackId", "==", track.id));
+        const querySnapshot = await getDocs(q);
+        let total = 0, count = 0;
+        querySnapshot.forEach(doc => {
+          total += doc.data().score;
+          count++;
+        });
+        const avg = count > 0 ? (total / count).toFixed(2) : 0;
         if (!levels[track.level]) {
           levels[track.level] = { labels: [], averages: [], voteCounts: [] };
         }
         levels[track.level].labels.push(track.title);
-        levels[track.level].averages.push(average || 0);
+        levels[track.level].averages.push(avg);
         levels[track.level].voteCounts.push(count);
       }
 
+      // Now create the charts only for each level
       for (const level in levels) {
-        const backgroundColor = `rgba(${Math.random()*200},${Math.random()*200},${Math.random()*200},0.6)`;
+        const backgroundColor = getRandomColor();
         if (!charts[level]) {
-          const canvas = document.createElement("canvas");
-          const section = document.createElement("div");
-          section.innerHTML = `<h3>${level} Level</h3>`;
-          section.appendChild(canvas);
-          document.getElementById("charts-container").appendChild(section);
-
-          charts[level] = new Chart(canvas.getContext('2d'), {
+          const data = {
+            labels: levels[level].labels,
+            datasets: [{
+              label: level,
+              data: levels[level].averages,
+              borderWidth: 1,
+              backgroundColor: backgroundColor
+            }]
+          };
+          
+          const config = {
             type: 'bar',
-            data: {
-              labels: levels[level].labels,
-              datasets: [{
-                label: level,
-                data: levels[level].averages,
-                backgroundColor
-              }]
-            },
+            data,
             options: {
               plugins: {
                 datalabels: {
-                  formatter: (value, context) => {
-                    const index = context.dataIndex;
-                    return `${value} (${levels[level].voteCounts[index]})`;
-                  },
                   anchor: 'end',
                   align: 'top',
-                  font: { weight: 'bold' }
+                  formatter: (value, context) => {
+                    const index = context.dataIndex;
+                    const votes = levels[level].voteCounts[index];
+                    return `${value} (${votes})`;
+                  },
+                  font: {
+                    weight: 'bold'
+                  }
                 }
               },
               scales: {
-                y: { beginAtZero: true, max: 10 }
+                y: {
+                  beginAtZero: true,
+                  max: 10
+                }
               }
             },
             plugins: [ChartDataLabels]
-          });
+          };
+
+          const chartContainer = document.createElement('div');
+          chartContainer.innerHTML = `<br><h2>${level.charAt(0).toUpperCase() + level.slice(1)} Level</h2>`;
+          const canvas = document.createElement('canvas');
+          chartContainer.appendChild(canvas);
+          chartsContainer.appendChild(chartContainer);
+
+          const ctx = canvas.getContext('2d');
+          charts[level] = new Chart(ctx, config);
         } else {
+          // Update existing chart if it already exists
           charts[level].data.labels = levels[level].labels;
           charts[level].data.datasets[0].data = levels[level].averages;
           charts[level].update();
@@ -148,62 +173,55 @@
       }
     }
 
-    async function renderTrack(track) {
-      const container = document.getElementById("track-list");
-      const div = document.createElement("div");
+    // Create the track list and initialize voting buttons
+    for (const track of tracks) {
+      const div = document.createElement('div');
       div.innerHTML = `
-        <h4>${track.title} - ${track.level}</h4>
+        <br>
+        <h3>- ${track.title} - ${track.level}</h3>
         <audio controls src="${track.mp3}"></audio>
         <div>
           ${[...Array(10)].map((_, i) =>
-            `<button data-score="${i+1}" data-id="${track.id}">${i+1}</button>`).join(' ')}
+            `<button data-score="${i+1}" data-id="${track.id}">${i+1}</button>`
+          ).join(' ')}
         </div>
-        <p id="result-${track.id}">Loading...</p>
+        <p id="result-${track.id}">Loading results...</p>
       `;
       container.appendChild(div);
 
-      const updateResults = async () => {
-        const res = await fetchVotes(track.id);
-        document.getElementById(`result-${track.id}`).textContent =
-          res.average ? `Avg: ${res.average} (${res.count} vote${res.count > 1 ? 's' : ''})` : 'No votes yet';
-        updateChart();
-      };
+      // Initially update the results for each track
+      updateResults(track.id);
 
-      updateResults();
+      // Add event listeners for voting
+      div.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const score = btn.dataset.score;
+          const id = btn.dataset.id;
+          const user = auth.currentUser;
 
-      div.querySelectorAll("button").forEach(btn => {
-        btn.addEventListener("click", async () => {
-          await db.createDocument(databaseId, collectionId, 'unique()', {
-            trackId: track.id,
-            score: Number(btn.dataset.score),
-            userId: user.$id
-          });
-          ding();
-          updateResults();
+          if (!user) {
+            alert("User not signed in");
+            return;
+          }
+
+          const voteRef = doc(db, "votes", `${user.uid}_${id}`);
+          try {
+            await setDoc(voteRef, {
+              score: Number(score),
+              trackId: id,
+              user: user.uid
+            });
+            //alert(`Voted ${score} on ${track.title}`);
+            ding();  
+            console.log(`Voted ${score} on ${track.title}`);
+            updateResults(id);
+          } catch (err) {
+            console.error("Error saving vote:", err);
+            alert("Failed to vote.");
+          }
         });
       });
     }
-
-    document.getElementById("uploadBtn").addEventListener("click", async () => {
-      const file = document.getElementById("fileInput").files[0];
-      if (!file) return alert("Choose a file first");
-
-      const level = prompt("Enter track level (e.g., JM, JSGM, JIM):");
-      const title = prompt("Enter track title:");
-
-      const uploaded = await storage.createFile(bucketId, 'unique()', file);
-      const mp3Url = storage.getFileView(bucketId, uploaded.$id);
-
-      const track = {
-        id: uploaded.$id,
-        title: title || file.name,
-        mp3: mp3Url.href,
-        level: level || 'Unknown'
-      };
-
-      tracks.push(track);
-      renderTrack(track);
-    });
 
   </script>
 </body>
