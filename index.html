@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>YouTube Tracks</title>
+  <title>YouTube Track Voting</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
   <style>
@@ -45,7 +45,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getFirestore, doc, setDoc, collection, query, orderBy, where, getDocs, getDoc, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, collection, query, where, getDocs, getDoc, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -88,17 +88,12 @@
       oscillator.stop(context.currentTime + 0.4);
     }
 
-// Load tracks from Firestore ordered by level and title
-const tracks = [];
-const tracksQuery = query(
-  collection(db, "tracks"),
-  orderBy("level"),
-  orderBy("title")
-);
-const snapshot = await getDocs(tracksQuery);
-snapshot.forEach(doc => {
-  tracks.push({ id: doc.id, ...doc.data() });
-});
+    // Load tracks from Firestore
+    const tracks = [];
+    const snapshot = await getDocs(collection(db, "tracks"));
+    snapshot.forEach(doc => {
+      tracks.push({ id: doc.id, ...doc.data() });
+    });
 
     async function updateResults(trackId) {
       const q = query(collection(db, "votes"), where("trackId", "==", trackId));
