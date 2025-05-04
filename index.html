@@ -10,7 +10,7 @@
   <h1>Vote for Your Favorite Tracks</h1>
   <div id="track-list"></div>
   <br>
-  <canvas id="resultsChart" style="max-height: 200px; width: auto;"></canvas>
+  <div id="charts-container"></div>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import { getFirestore, doc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
@@ -31,13 +31,14 @@
     await signInAnonymously(auth);
 
     const tracks = [
-      { id: 'track1', title: 'Track 1', mp3: 'https://djangojazzcalgary.wordpress.com/wp-content/uploads/2025/05/track1.mp3' },
-      { id: 'track2', title: 'Track 2', mp3: 'https://djangojazzcalgary.wordpress.com/wp-content/uploads/2025/05/track2.mp3' },
-      { id: 'track3', title: 'Track 3', mp3: 'https://djangojazzcalgary.wordpress.com/wp-content/uploads/2025/05/track3.mp3' },
+      { id: 'track1', title: 'Track 1', mp3: 'https://djangojazzcalgary.wordpress.com/wp-content/uploads/2025/05/track1.mp3', level: 'JM' },
+      { id: 'track2', title: 'Track 2', mp3: 'https://djangojazzcalgary.wordpress.com/wp-content/uploads/2025/05/track2.mp3', level: 'JSGM' },
+      { id: 'track3', title: 'Track 3', mp3: 'https://djangojazzcalgary.wordpress.com/wp-content/uploads/2025/05/track3.mp3', level: 'JSGM' },
     ];
 
     const container = document.getElementById('track-list');
-    let chart;
+    const chartsContainer = document.getElementById('charts-container');
+    let charts = {};
 
     for (const track of tracks) {
       const div = document.createElement('div');
@@ -98,9 +99,7 @@
     }
 
     async function updateChart() {
-      const labels = [];
-      const averages = [];
-      const voteCounts = [];
+      const levels = {};
 
       for (const track of tracks) {
         const q = query(collection(db, "votes"), where("trackId", "==", track.id));
@@ -111,56 +110,67 @@
           count++;
         });
         const avg = count > 0 ? (total / count).toFixed(2) : 0;
-        labels.push(track.title);
-        averages.push(avg);
-        voteCounts.push(count);
+        if (!levels[track.level]) {
+          levels[track.level] = { labels: [], averages: [], voteCounts: [] };
+        }
+        levels[track.level].labels.push(track.title);
+        levels[track.level].averages.push(avg);
+        levels[track.level].voteCounts.push(count);
       }
 
-      const data = {
-        labels,
-        datasets: [{
-          label: 'Average',
-          data: averages,
-          borderWidth: 1,
-          backgroundColor: 'rgba(54, 162, 235, 0.6)'
-        }]
-      };
+      for (const level in levels) {
+        const data = {
+          labels: levels[level].labels,
+          datasets: [{
+            label: 'Average',
+            data: levels[level].averages,
+            borderWidth: 1,
+            backgroundColor: 'rgba(54, 162, 235, 0.6)'
+          }]
+        };
 
-      const config = {
-        type: 'bar',
-        data,
-        options: {
-          plugins: {
-            datalabels: {
-              anchor: 'end',
-              align: 'top',
-              formatter: (value, context) => {
-                const index = context.dataIndex;
-                const votes = voteCounts[index];
-                return `${value} (${votes})`;
-              },
-              font: {
-                weight: 'bold'
+        const config = {
+          type: 'bar',
+          data,
+          options: {
+            plugins: {
+              datalabels: {
+                anchor: 'end',
+                align: 'top',
+                formatter: (value, context) => {
+                  const index = context.dataIndex;
+                  const votes = levels[level].voteCounts[index];
+                  return `${value} (${votes})`;
+                },
+                font: {
+                  weight: 'bold'
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 10
               }
             }
           },
-          scales: {
-            y: {
-              beginAtZero: true,
-              max: 10
-            }
-          }
-        },
-        plugins: [ChartDataLabels]
-      };
+          plugins: [ChartDataLabels]
+        };
 
-      if (chart) {
-        chart.data = data;
-        chart.options = config.options;
-        chart.update();
-      } else {
-        const ctx = document.getElementById('resultsChart').getContext('2d');
-        chart = new Chart(ctx, config);
+        const chartContainer = document.createElement('div');
+        chartContainer.innerHTML = `<h2>${level.charAt(0).toUpperCase() + level.slice(1)} Level</h2>`;
+        const canvas = document.createElement('canvas');
+        chartContainer.appendChild(canvas);
+        chartsContainer.appendChild(chartContainer);
+
+        const ctx = canvas.getContext('2d');
+        if (charts[level]) {
+          charts[level].data = data;
+          charts[level].options = config.options;
+          charts[level].update();
+        } else {
+          charts[level] = new Chart(ctx, config);
+        }
       }
     }
 
