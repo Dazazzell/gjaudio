@@ -50,6 +50,28 @@
     const chartsContainer = document.getElementById('charts-container');
     let charts = {};
 
+function beep(frequency = 440, duration = 150, volume = 1) {
+  const context = new (window.AudioContext || window.webkitAudioContext)();
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
+
+  oscillator.type = 'sine';
+  oscillator.frequency.value = frequency;
+
+  gain.gain.value = volume;
+
+  oscillator.connect(gain);
+  gain.connect(context.destination);
+
+  oscillator.start();
+
+  setTimeout(() => {
+    oscillator.stop();
+    context.close();
+  }, duration);
+}
+
+    
     // Function to update the results for a single track
     async function updateResults(trackId) {
       const q = query(collection(db, "votes"), where("trackId", "==", trackId));
@@ -185,7 +207,9 @@
               trackId: id,
               user: user.uid
             });
-            alert(`Voted ${score} on ${track.title}`);
+            //alert(`Voted ${score} on ${track.title}`);
+            beep();  
+            console.log(`Voted ${score} on ${track.title}`);
             updateResults(id);
           } catch (err) {
             console.error("Error saving vote:", err);
