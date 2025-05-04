@@ -1,20 +1,20 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
   <title>MP3 Voting</title>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
 </head>
 <body>
-  <h1>MP3 Voting</h1>
+  <h1>Vote for Your Favorite Tracks</h1>
   <div id="track-list"></div>
 
+  <!-- Firebase SDKs -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getFirestore, collection, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
+    // ✅ Replace this with your actual Firebase config from the console
     const firebaseConfig = {
       apiKey: "AIzaSyDp_cESC1PrXHxnTC2JMRdR928KXXwEvOw",
       authDomain: "gjaudio-d18d9.firebaseapp.com",
@@ -29,9 +29,8 @@
     const auth = getAuth(app);
 
     // Sign in anonymously
-    signInAnonymously(auth).then(() => {
-      console.log('Signed in anonymously');
-    });
+    await signInAnonymously(auth);
+    console.log("Signed in as:", auth.currentUser.uid);
 
     const tracks = [
       { id: 'track1', title: 'Track One', mp3: 'track1.mp3' },
@@ -48,7 +47,7 @@
         <div>
           ${[...Array(10)].map((_, i) =>
             `<button data-score="${i+1}" data-id="${track.id}">${i+1}</button>`
-          ).join('')}
+          ).join(' ')}
         </div>
       `;
       container.appendChild(div);
@@ -57,12 +56,25 @@
         btn.addEventListener('click', async () => {
           const score = btn.dataset.score;
           const id = btn.dataset.id;
-
           const user = auth.currentUser;
-          const voteRef = doc(db, "votes", `${user.uid}_${id}`);
-          await setDoc(voteRef, { score: Number(score), trackId: id, user: user.uid });
 
-          alert(`Voted ${score} on ${id}`);
+          if (!user) {
+            alert("User not signed in");
+            return;
+          }
+
+          const voteRef = doc(db, "votes", `${user.uid}_${id}`);
+          try {
+            await setDoc(voteRef, {
+              score: Number(score),
+              trackId: id,
+              user: user.uid
+            });
+            alert(`Voted ${score} on ${track.title}`);
+          } catch (err) {
+            console.error("Error saving vote:", err);
+            alert("Failed to vote.");
+          }
         });
       });
     });
