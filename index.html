@@ -8,7 +8,7 @@
   <style>
     canvas {
       height: 20vh; /* 20% of the viewport height */
-      width: 60%; /* 60% of the width */
+      width: 100%; /* 100% of the width */
     }
   </style>
 </head>
@@ -67,6 +67,7 @@
     async function updateChart() {
       const levels = {};
 
+      // Group tracks by their level
       for (const track of tracks) {
         const q = query(collection(db, "votes"), where("trackId", "==", track.id));
         const querySnapshot = await getDocs(q);
@@ -86,57 +87,58 @@
 
       // Now create the charts only for each level (easy, medium, hard)
       for (const level in levels) {
-        const data = {
-          labels: levels[level].labels,
-          datasets: [{
-            label: 'Average',
-            data: levels[level].averages,
-            borderWidth: 1,
-            backgroundColor: 'rgba(54, 162, 235, 0.6)'
-          }]
-        };
+        if (!charts[level]) {
+          const data = {
+            labels: levels[level].labels,
+            datasets: [{
+              label: 'Average',
+              data: levels[level].averages,
+              borderWidth: 1,
+              backgroundColor: 'rgba(54, 162, 235, 0.6)'
+            }]
+          };
 
-        const config = {
-          type: 'bar',
-          data,
-          options: {
-            plugins: {
-              datalabels: {
-                anchor: 'end',
-                align: 'top',
-                formatter: (value, context) => {
-                  const index = context.dataIndex;
-                  const votes = levels[level].voteCounts[index];
-                  return `${value} (${votes})`;
-                },
-                font: {
-                  weight: 'bold'
+          const config = {
+            type: 'bar',
+            data,
+            options: {
+              plugins: {
+                datalabels: {
+                  anchor: 'end',
+                  align: 'top',
+                  formatter: (value, context) => {
+                    const index = context.dataIndex;
+                    const votes = levels[level].voteCounts[index];
+                    return `${value} (${votes})`;
+                  },
+                  font: {
+                    weight: 'bold'
+                  }
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  max: 10
                 }
               }
             },
-            scales: {
-              y: {
-                beginAtZero: true,
-                max: 10
-              }
-            }
-          },
-          plugins: [ChartDataLabels]
-        };
+            plugins: [ChartDataLabels]
+          };
 
-        const chartContainer = document.createElement('div');
-        chartContainer.innerHTML = `<h2>${level.charAt(0).toUpperCase() + level.slice(1)} Level</h2>`;
-        const canvas = document.createElement('canvas');
-        chartContainer.appendChild(canvas);
-        chartsContainer.appendChild(chartContainer);
+          const chartContainer = document.createElement('div');
+          chartContainer.innerHTML = `<h2>${level.charAt(0).toUpperCase() + level.slice(1)} Level</h2>`;
+          const canvas = document.createElement('canvas');
+          chartContainer.appendChild(canvas);
+          chartsContainer.appendChild(chartContainer);
 
-        const ctx = canvas.getContext('2d');
-        if (charts[level]) {
-          charts[level].data = data;
-          charts[level].options = config.options;
-          charts[level].update();
-        } else {
+          const ctx = canvas.getContext('2d');
           charts[level] = new Chart(ctx, config);
+        } else {
+          // Update existing chart if it already exists
+          charts[level].data.labels = levels[level].labels;
+          charts[level].data.datasets[0].data = levels[level].averages;
+          charts[level].update();
         }
       }
     }
