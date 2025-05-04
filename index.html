@@ -88,8 +88,6 @@
 
       // Now create the charts only for each level
       for (const level in levels) {
-        const randomNumber = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
-        const randomByte = () => randomNumber(0, 255);
         if (!charts[level]) {
           const data = {
             labels: levels[level].labels,
@@ -97,7 +95,7 @@
               label: 'Average',
               data: levels[level].averages,
               borderWidth: 1,
-              backgroundColor: 'rgba(${randomByte()}, 162, 235, 0.6)'
+              backgroundColor: 'rgba(54, 162, 235, 0.6)'
             }]
           };
 
