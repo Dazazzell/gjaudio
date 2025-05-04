@@ -6,10 +6,10 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <canvas id="resultsChart" style="height:30%"></canvas>
   <h1>Vote for Your Favorite Tracks</h1>
   <div id="track-list"></div>
-  
+  <br>
+  <canvas id="resultsChart" style="max-height: 200px; width: auto;"></canvas>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import { getFirestore, doc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
