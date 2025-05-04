@@ -186,7 +186,7 @@
       div.innerHTML = `
         <br>
         <h3>- ${track.title} (${track.level})</h3>
-        <iframe src="https://www.youtube.com/embed/${track.youtube}" frameborder="0" allowfullscreen></iframe>
+        <iframe width="420" height="236" src="https://www.youtube.com/embed/${track.youtube}" frameborder="0" allowfullscreen></iframe>
         <div>
           ${[...Array(10)].map((_, i) =>
             `<button data-score="${i+1}" data-id="${track.id}">${i+1}</button>`
@@ -225,27 +225,35 @@
 
     // Add new track form handler
     document.getElementById('add-track-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const title = document.getElementById('title').value.trim();
-      const youtube = document.getElementById('youtube').value.trim();
-      const level = document.getElementById('level').value;
-      if (!title || !youtube || !level) {
-        alert("All fields are required.");
-        return;
-      }
-      try {
-        await addDoc(collection(db, "tracks"), {
-          title,
-          youtube,
-          level
-        });
-        alert("Track added!");
-        location.reload();
-      } catch (err) {
-        console.error("Error adding track:", err);
-        alert("Failed to add track.");
-      }
+  e.preventDefault();
+  const title = document.getElementById('title').value.trim();
+  const youtube = document.getElementById('youtube').value.trim();
+  const level = document.getElementById('level').value;
+  if (!title || !youtube || !level) {
+    alert("All fields are required.");
+    return;
+  }
+
+  // Validate YouTube ID using oEmbed
+  const oEmbedURL = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${youtube}&format=json`;
+  try {
+    const response = await fetch(oEmbedURL);
+    if (!response.ok) throw new Error("Invalid YouTube ID");
+
+    // Proceed to add track
+    await addDoc(collection(db, "tracks"), {
+      title,
+      youtube,
+      level
     });
+    alert("Track added!");
+    location.reload();
+  } catch (err) {
+    console.error("YouTube validation failed:", err);
+    alert("Invalid YouTube ID. Please double-check the link.");
+  }
+});
+
   </script>
 </body>
 </html>
