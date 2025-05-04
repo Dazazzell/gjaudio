@@ -2,19 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>MP3 Voting</title>
+  <title>MP3 Voting Results</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; }
+    canvas { max-width: 600px; }
+  </style>
 </head>
 <body>
-  <h1>Vote for Your Favorite Tracks</h1>
-  <div id="track-list"></div>
+  <h1>Voting Results</h1>
+  <canvas id="voteChart"></canvas>
 
-  <!-- Firebase SDKs -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-    // ✅ Replace this with your actual Firebase config from the console
+    // ✅ Replace with your actual Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyDp_cESC1PrXHxnTC2JMRdR928KXXwEvOw",
       authDomain: "gjaudio-d18d9.firebaseapp.com",
@@ -26,58 +29,63 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    const auth = getAuth(app);
 
-    // Sign in anonymously
-    await signInAnonymously(auth);
-    console.log("Signed in as:", auth.currentUser.uid);
-
+    // Tracks (hardcoded or fetched elsewhere)
     const tracks = [
-      { id: 'track1', title: 'Track One', mp3: 'track1.mp3' },
-      { id: 'track2', title: 'Track Two', mp3: 'track2.mp3' }
+      { id: 'track1', title: 'Track One' },
+      { id: 'track2', title: 'Track Two' }
     ];
 
-    const container = document.getElementById('track-list');
+    const voteCounts = {}; // trackId -> { total: sum, count: numVotes }
 
-    tracks.forEach(track => {
-      const div = document.createElement('div');
-      div.innerHTML = `
-        <h3>${track.title}</h3>
-        <audio controls src="${track.mp3}"></audio>
-        <div>
-          ${[...Array(10)].map((_, i) =>
-            `<button data-score="${i+1}" data-id="${track.id}">${i+1}</button>`
-          ).join(' ')}
-        </div>
-      `;
-      container.appendChild(div);
+    // Initialize empty counts
+    tracks.forEach(track => voteCounts[track.id] = { total: 0, count: 0 });
 
-      div.querySelectorAll('button').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const score = btn.dataset.score;
-          const id = btn.dataset.id;
-          const user = auth.currentUser;
+    // Fetch and process votes
+    async function loadVotes() {
+      const snapshot = await getDocs(collection(db, "votes"));
 
-          if (!user) {
-            alert("User not signed in");
-            return;
-          }
-
-          const voteRef = doc(db, "votes", `${user.uid}_${id}`);
-          try {
-            await setDoc(voteRef, {
-              score: Number(score),
-              trackId: id,
-              user: user.uid
-            });
-            alert(`Voted ${score} on ${track.title}`);
-          } catch (err) {
-            console.error("Error saving vote:", err);
-            alert("Failed to vote.");
-          }
-        });
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        if (voteCounts[data.trackId]) {
+          voteCounts[data.trackId].total += data.score;
+          voteCounts[data.trackId].count += 1;
+        }
       });
-    });
+
+      drawChart();
+    }
+
+    function drawChart() {
+      const labels = tracks.map(t => t.title);
+      const averages = tracks.map(t => {
+        const { total, count } = voteCounts[t.id];
+        return count > 0 ? (total / count).toFixed(2) : 0;
+      });
+
+      new Chart(document.getElementById("voteChart"), {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "Average Score",
+            data: averages,
+            backgroundColor: "#4e79a7"
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 10
+            }
+          }
+        }
+      });
+    }
+
+    loadVotes();
   </script>
 </body>
 </html>
