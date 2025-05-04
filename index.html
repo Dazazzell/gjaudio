@@ -90,9 +90,9 @@
       for (const level in levels) {
         if (!charts[level]) {
           const data = {
-            label: 'Average',
             labels: levels[level].labels,
             datasets: [{
+              label: '',
               data: levels[level].averages,
               borderWidth: 1,
               backgroundColor: 'rgba(54, 162, 235, 0.6)'
