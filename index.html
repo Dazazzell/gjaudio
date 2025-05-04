@@ -90,6 +90,7 @@
       for (const level in levels) {
         if (!charts[level]) {
           const data = {
+            label: '',
             labels: levels[level].labels,
             datasets: [{
               data: levels[level].averages,
