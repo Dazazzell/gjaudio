@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>MP3 Voting</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
 </head>
 <body>
   <h1>Vote for Your Favorite Tracks</h1>
@@ -38,7 +39,7 @@
     ];
 
     const container = document.getElementById('track-list');
-    let chart; // Global Chart.js instance
+    let chart;
 
     for (const track of tracks) {
       const div = document.createElement('div');
@@ -101,6 +102,7 @@
     async function updateChart() {
       const labels = [];
       const averages = [];
+      const voteCounts = [];
 
       for (const track of tracks) {
         const q = query(collection(db, "votes"), where("trackId", "==", track.id));
@@ -113,6 +115,7 @@
         const avg = count > 0 ? (total / count).toFixed(2) : 0;
         labels.push(track.title);
         averages.push(avg);
+        voteCounts.push(count);
       }
 
       const data = {
@@ -120,7 +123,8 @@
         datasets: [{
           label: 'Average',
           data: averages,
-          borderWidth: 1
+          borderWidth: 1,
+          backgroundColor: 'rgba(54, 162, 235, 0.6)'
         }]
       };
 
@@ -128,17 +132,33 @@
         type: 'bar',
         data,
         options: {
+          plugins: {
+            datalabels: {
+              anchor: 'end',
+              align: 'top',
+              formatter: (value, context) => {
+                const index = context.dataIndex;
+                const votes = voteCounts[index];
+                return `${value} (${votes})`;
+              },
+              font: {
+                weight: 'bold'
+              }
+            }
+          },
           scales: {
             y: {
               beginAtZero: true,
               max: 10
             }
           }
-        }
+        },
+        plugins: [ChartDataLabels]
       };
 
       if (chart) {
         chart.data = data;
+        chart.options = config.options;
         chart.update();
       } else {
         const ctx = document.getElementById('resultsChart').getContext('2d');
@@ -146,7 +166,6 @@
       }
     }
 
-    // Initial chart render
     updateChart();
   </script>
 </body>
