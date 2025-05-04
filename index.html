@@ -2,21 +2,25 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>YouTube Voting</title>
+  <title>YouTube Track Voting</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
   <style>
     #charts-container {
-      width: 50%;
-      margin-top: 20px;
+      width: 60%;
+      margin-top: 30px;
+    }
+    iframe {
+      max-width: 100%;
+      margin: 10px 0;
     }
   </style>
 </head>
 <body>
-  <div>Test test</div>
+  <h2>YouTube Track Voting</h2>
   <div id="track-list"></div>
-  <br>
   <div id="charts-container"></div>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import { getFirestore, doc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
@@ -36,15 +40,6 @@
     const auth = getAuth(app);
     await signInAnonymously(auth);
 
-    const tracks = [
-      { id: 'track1', title: 'Track1 - Luigi', youtube: 'LHq9Z0_UaDs', level: 'JSGM' },
-      { id: 'track2', title: 'Track2 - Minor Swing', youtube: 'LHq9Z0_UaDs', level: 'JSGM' },
-      { id: 'track3', title: 'Track3 - Minor Swing', youtube: 'LHq9Z0_UaDs', level: 'JIM' },
-      { id: 'track4', title: 'Track4 - All of me', youtube: 'OKRTRzhAsDU', level: 'JM' },
-      { id: 'track5', title: 'Track5 - Minor Swing', youtube: 'OKRTRzhAsDU', level: 'JSGM' },
-      { id: 'track6', title: 'Track6 - All of me', youtube: 'OKRTRzhAsDU', level: 'JSGM' }
-    ];
-
     const container = document.getElementById('track-list');
     const chartsContainer = document.getElementById('charts-container');
     let charts = {};
@@ -60,17 +55,20 @@
       const context = new (window.AudioContext || window.webkitAudioContext)();
       const oscillator = context.createOscillator();
       const gain = context.createGain();
-
       oscillator.type = 'triangle';
       oscillator.frequency.setValueAtTime(880, context.currentTime);
       gain.gain.setValueAtTime(0.001, context.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.5, context.currentTime + 0.01);
       gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.3);
-
       oscillator.connect(gain);
       gain.connect(context.destination);
       oscillator.start(context.currentTime);
       oscillator.stop(context.currentTime + 0.4);
+    }
+
+    async function loadTracks() {
+      const querySnapshot = await getDocs(collection(db, "tracks"));
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     }
 
     async function updateResults(trackId) {
@@ -89,6 +87,8 @@
 
     async function updateChart() {
       const levels = {};
+      const tracks = await loadTracks();
+
       for (const track of tracks) {
         const q = query(collection(db, "votes"), where("trackId", "==", track.id));
         const querySnapshot = await getDocs(q);
@@ -163,25 +163,22 @@
       }
     }
 
+    // Initialize
+    const tracks = await loadTracks();
     for (const track of tracks) {
       const div = document.createElement('div');
       div.innerHTML = `
         <br>
         <h3>- ${track.title} - ${track.level}</h3>
-        <div>
-          <iframe width="320" height="180" src="https://www.youtube.com/embed/${track.youtube}"
-            frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowfullscreen></iframe>
-        </div>
+        <iframe width="420" height="236" src="https://www.youtube.com/embed/${track.youtube}" frameborder="0" allowfullscreen></iframe>
         <div>
           ${[...Array(10)].map((_, i) =>
-            `<button data-score="${i+1}" data-id="${track.id}">${i+1}</button>`
+            `<button data-score="${i + 1}" data-id="${track.id}">${i + 1}</button>`
           ).join(' ')}
         </div>
         <p id="result-${track.id}">Loading results...</p>
       `;
       container.appendChild(div);
-
       updateResults(track.id);
 
       div.querySelectorAll('button').forEach(btn => {
