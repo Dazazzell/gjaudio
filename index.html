@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>MP3 Voting (IP Restricted)</title>
+  <title>MP3 Voting</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
 </head>
@@ -11,13 +11,11 @@
   <div id="track-list"></div>
   <br>
   <canvas id="resultsChart" style="max-height: 200px; width: auto;"></canvas>
-
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import { getFirestore, doc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-    // 1. Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyDp_cESC1PrXHxnTC2JMRdR928KXXwEvOw",
       authDomain: "gjaudio-d18d9.firebaseapp.com",
@@ -32,29 +30,15 @@
     const auth = getAuth(app);
     await signInAnonymously(auth);
 
-    // 2. Get user's public IP address
-    let userIp = null;
-    try {
-      const res = await fetch("https://api.ipify.org?format=json");
-      const json = await res.json();
-      userIp = json.ip;
-    } catch (err) {
-      console.error("Failed to get IP address", err);
-    }
-
-    // 3. Track data
     const tracks = [
       { id: 'track1', title: 'Track 1', mp3: 'https://djangojazzcalgary.wordpress.com/wp-content/uploads/2025/05/track1.mp3' },
-      { id: 'track2', title: 'Track 2', mp3: 'https://djangojazzcalgary.wordpress.com/wp-content/uploads/2025/05/track1.mp3' },
-      { id: 'track3', title: 'Track 3', mp3: 'https://djangojazzcalgary.wordpress.com/wp-content/uploads/2025/05/track1.mp3' },
-      { id: 'track4', title: 'Track 4', mp3: 'https://djangojazzcalgary.wordpress.com/wp-content/uploads/2025/05/track1.mp3' },
-      { id: 'track5', title: 'Track 5', mp3: 'https://djangojazzcalgary.wordpress.com/wp-content/uploads/2025/05/track2.mp3' }
+      { id: 'track2', title: 'Track 2', mp3: 'https://djangojazzcalgary.wordpress.com/wp-content/uploads/2025/05/track2.mp3' },
+      { id: 'track3', title: 'Track 3', mp3: 'https://djangojazzcalgary.wordpress.com/wp-content/uploads/2025/05/track3.mp3' },
     ];
 
     const container = document.getElementById('track-list');
     let chart;
 
-    // 4. Render tracks
     for (const track of tracks) {
       const div = document.createElement('div');
       div.innerHTML = `
@@ -73,20 +57,21 @@
 
       div.querySelectorAll('button').forEach(btn => {
         btn.addEventListener('click', async () => {
-          if (!userIp) {
-            alert("Unable to get IP address. Please try another browser.");
+          const score = btn.dataset.score;
+          const id = btn.dataset.id;
+          const user = auth.currentUser;
+
+          if (!user) {
+            alert("User not signed in");
             return;
           }
 
-          const score = btn.dataset.score;
-          const id = btn.dataset.id;
-          const voteRef = doc(db, "votes", `${userIp}_${id}`);
-
+          const voteRef = doc(db, "votes", `${user.uid}_${id}`);
           try {
             await setDoc(voteRef, {
               score: Number(score),
               trackId: id,
-              user: userIp
+              user: user.uid
             });
             alert(`Voted ${score} on ${track.title}`);
             updateResults(id);
@@ -98,7 +83,6 @@
       });
     }
 
-    // 5. Update vote info below track
     async function updateResults(trackId) {
       const q = query(collection(db, "votes"), where("trackId", "==", trackId));
       const querySnapshot = await getDocs(q);
@@ -113,7 +97,6 @@
       updateChart();
     }
 
-    // 6. Render/update the chart
     async function updateChart() {
       const labels = [];
       const averages = [];
@@ -181,7 +164,6 @@
       }
     }
 
-    // Initial chart render
     updateChart();
   </script>
 </body>
