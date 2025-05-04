@@ -1,70 +1,71 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
   <title>MP3 Voting</title>
-  <style>
-    .track { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
-    .votes button { margin: 2px; }
-    .voted { background-color: #4caf50; color: white; }
-  </style>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
 </head>
 <body>
-
+  <h1>MP3 Voting</h1>
   <div id="track-list"></div>
 
-  <script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getFirestore, collection, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDp_cESC1PrXHxnTC2JMRdR928KXXwEvOw",
+      authDomain: "gjaudio-d18d9.firebaseapp.com",
+      projectId: "gjaudio-d18d9.firebaseapp.com",
+      storageBucket: "gjaudio-d18d9.firebasestorage.app",
+      messagingSenderId: "740115381859",
+      appId: "1:740115381859:web:a19505a463269198274256"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    // Sign in anonymously
+    signInAnonymously(auth).then(() => {
+      console.log('Signed in anonymously');
+    });
+
     const tracks = [
       { id: 'track1', title: 'Track One', mp3: 'track1.mp3' },
-      { id: 'track2', title: 'Track Two', mp3: 'track2.mp3' },
-      { id: 'track3', title: 'Track Three', mp3: 'track3.mp3' },
+      { id: 'track2', title: 'Track Two', mp3: 'track2.mp3' }
     ];
 
-    const trackList = document.getElementById('track-list');
-
-    function saveVote(trackId, score) {
-      localStorage.setItem(`vote_${trackId}`, score);
-    }
-
-    function getVote(trackId) {
-      return localStorage.getItem(`vote_${trackId}`);
-    }
+    const container = document.getElementById('track-list');
 
     tracks.forEach(track => {
       const div = document.createElement('div');
-      div.className = 'track';
       div.innerHTML = `
         <h3>${track.title}</h3>
         <audio controls src="${track.mp3}"></audio>
-        <div class="votes" id="votes-${track.id}">
+        <div>
           ${[...Array(10)].map((_, i) =>
-            `<button data-score="${i+1}" data-track="${track.id}">${i+1}</button>`
+            `<button data-score="${i+1}" data-id="${track.id}">${i+1}</button>`
           ).join('')}
         </div>
       `;
-      trackList.appendChild(div);
+      container.appendChild(div);
 
-      const buttons = div.querySelectorAll('button');
-      buttons.forEach(button => {
-        button.addEventListener('click', () => {
-          const trackId = button.dataset.track;
-          const score = button.dataset.score;
-          saveVote(trackId, score);
-          highlightVote(trackId);
+      div.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const score = btn.dataset.score;
+          const id = btn.dataset.id;
+
+          const user = auth.currentUser;
+          const voteRef = doc(db, "votes", `${user.uid}_${id}`);
+          await setDoc(voteRef, { score: Number(score), trackId: id, user: user.uid });
+
+          alert(`Voted ${score} on ${id}`);
         });
       });
-
-      highlightVote(track.id);
     });
-
-    function highlightVote(trackId) {
-      const votedScore = getVote(trackId);
-      const buttons = document.querySelectorAll(`#votes-${trackId} button`);
-      buttons.forEach(btn => {
-        btn.classList.toggle('voted', btn.dataset.score === votedScore);
-      });
-    }
   </script>
-
 </body>
 </html>
