@@ -45,7 +45,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getFirestore, doc, setDoc, collection, query, where, getDocs, getDoc, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, collection, query, orderBy, where, getDocs, getDoc, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -87,8 +87,6 @@
       oscillator.start(context.currentTime);
       oscillator.stop(context.currentTime + 0.4);
     }
-
-import { getDocs, collection, query, orderBy } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 // Load tracks from Firestore ordered by level and title
 const tracks = [];
