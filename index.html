@@ -50,6 +50,13 @@
     const chartsContainer = document.getElementById('charts-container');
     let charts = {};
 
+function getRandomColor() {
+  const r = Math.floor(Math.random() * 200);
+  const g = Math.floor(Math.random() * 200);
+  const b = Math.floor(Math.random() * 200);
+  return `rgba(${r}, ${g}, ${b}, 0.6)`; // 0.6 for transparency
+}
+    
 function ding() {
   const context = new (window.AudioContext || window.webkitAudioContext)();
   const oscillator = context.createOscillator();
@@ -109,6 +116,7 @@ function ding() {
 
       // Now create the charts only for each level
       for (const level in levels) {
+        const backgroundColor = getRandomColor();
         if (!charts[level]) {
           const data = {
             labels: levels[level].labels,
@@ -116,10 +124,10 @@ function ding() {
               label: 'Average',
               data: levels[level].averages,
               borderWidth: 1,
-              backgroundColor: 'rgba(54, 162, 235, 0.6)'
+              backgroundColor: backgroundColor
             }]
           };
-
+          
           const config = {
             type: 'bar',
             data,
