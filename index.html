@@ -2,19 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>MP3 Voting</title>
+  <title>YouTube Voting</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
-<style>
-  /* Optional: Style for the charts container to ensure proper spacing */
-  #charts-container {
-    width: 50%;
-    margin-top: 20px;
-  }
-</style>
+  <style>
+    #charts-container {
+      width: 50%;
+      margin-top: 20px;
+    }
+  </style>
 </head>
 <body>
-  <div> Test test </div>
+  <div>Test test</div>
   <div id="track-list"></div>
   <br>
   <div id="charts-container"></div>
@@ -27,7 +26,7 @@
       apiKey: "AIzaSyDp_cESC1PrXHxnTC2JMRdR928KXXwEvOw",
       authDomain: "gjaudio-d18d9.firebaseapp.com",
       projectId: "gjaudio-d18d9",
-      storageBucket: "gjaudio-d18d9.firebasestorage.app",
+      storageBucket: "gjaudio-d18d9.appspot.com",
       messagingSenderId: "740115381859",
       appId: "1:740115381859:web:a19505a463269198274256"
     };
@@ -38,44 +37,42 @@
     await signInAnonymously(auth);
 
     const tracks = [
-      { id: 'track1', title: 'Track1 - Luigi', mp3: 'https://dodarchive.dwellingofduels.net/25-03-Free/06-Carington%20Swing-Luigis%20Mansion-Boos%20on%20the%20Loose%20Luigis%20Mansion%20Main%20Theme-DoD.mp3', level: 'JSGM' },
-      { id: 'track2', title: 'Track2 - Minor Swing', mp3: 'https://djangojazzcalgary.wordpress.com/wp-content/uploads/2025/05/track2.mp3', level: 'JSGM' },
-      { id: 'track3', title: 'Track3 - Minor Swing', mp3: 'https://djangojazzcalgary.wordpress.com/wp-content/uploads/2025/05/track3.mp3', level: 'JIM' },
-      { id: 'track4', title: 'Track4 - All of me', mp3: 'https://djangojazzcalgary.wordpress.com/wp-content/uploads/2025/05/track1.mp3', level: 'JM' },
-      { id: 'track5', title: 'Track5 - Minor Swing', mp3: 'https://djangojazzcalgary.wordpress.com/wp-content/uploads/2025/05/track2.mp3', level: 'JSGM' },
-      { id: 'track6', title: 'Track6 - All of me', mp3: 'https://cdn.discordapp.com/attachments/1216555909397090394/1368498276772610108/track3.mp3?ex=681870d6&is=68171f56&hm=bd01c7a45fcd4d0236fbf707201e3a7e6293aae4defd66824d6bb462def1b3b7&', level: 'JSGM' }
+      { id: 'track1', title: 'Track1 - Luigi', youtube: 'LHq9Z0_UaDs', level: 'JSGM' },
+      { id: 'track2', title: 'Track2 - Minor Swing', youtube: 'LHq9Z0_UaDs', level: 'JSGM' },
+      { id: 'track3', title: 'Track3 - Minor Swing', youtube: 'LHq9Z0_UaDs', level: 'JIM' },
+      { id: 'track4', title: 'Track4 - All of me', youtube: 'OKRTRzhAsDU', level: 'JM' },
+      { id: 'track5', title: 'Track5 - Minor Swing', youtube: 'OKRTRzhAsDU', level: 'JSGM' },
+      { id: 'track6', title: 'Track6 - All of me', youtube: 'OKRTRzhAsDU', level: 'JSGM' }
     ];
 
     const container = document.getElementById('track-list');
     const chartsContainer = document.getElementById('charts-container');
     let charts = {};
 
-function getRandomColor() {
-  const r = Math.floor(Math.random() * 200);
-  const g = Math.floor(Math.random() * 200);
-  const b = Math.floor(Math.random() * 200);
-  return `rgba(${r}, ${g}, ${b}, 0.6)`; // 0.6 for transparency
-}
-    
-function ding() {
-  const context = new (window.AudioContext || window.webkitAudioContext)();
-  const oscillator = context.createOscillator();
-  const gain = context.createGain();
+    function getRandomColor() {
+      const r = Math.floor(Math.random() * 200);
+      const g = Math.floor(Math.random() * 200);
+      const b = Math.floor(Math.random() * 200);
+      return `rgba(${r}, ${g}, ${b}, 0.6)`;
+    }
 
-  oscillator.type = 'triangle';           // Triangle wave sounds more like a ding
-  oscillator.frequency.setValueAtTime(880, context.currentTime); // A5 note
-  gain.gain.setValueAtTime(0.001, context.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.5, context.currentTime + 0.01); // Attack
-  gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.3); // Decay
+    function ding() {
+      const context = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
 
-  oscillator.connect(gain);
-  gain.connect(context.destination);
-  oscillator.start(context.currentTime);
-  oscillator.stop(context.currentTime + 0.4); // Short ding
-}
+      oscillator.type = 'triangle';
+      oscillator.frequency.setValueAtTime(880, context.currentTime);
+      gain.gain.setValueAtTime(0.001, context.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.5, context.currentTime + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.3);
 
-    
-    // Function to update the results for a single track
+      oscillator.connect(gain);
+      gain.connect(context.destination);
+      oscillator.start(context.currentTime);
+      oscillator.stop(context.currentTime + 0.4);
+    }
+
     async function updateResults(trackId) {
       const q = query(collection(db, "votes"), where("trackId", "==", trackId));
       const querySnapshot = await getDocs(q);
@@ -87,16 +84,11 @@ function ding() {
       const avg = count > 0 ? (total / count).toFixed(2) : null;
       document.getElementById(`result-${trackId}`).textContent =
         avg ? `Average score: ${avg} (${count} vote${count > 1 ? 's' : ''})` : "No votes yet";
-
-      // Update chart after results are updated
       updateChart();
     }
 
-    // Function to update the chart for all tracks, grouped by level
     async function updateChart() {
       const levels = {};
-
-      // Group tracks by their level
       for (const track of tracks) {
         const q = query(collection(db, "votes"), where("trackId", "==", track.id));
         const querySnapshot = await getDocs(q);
@@ -114,7 +106,6 @@ function ding() {
         levels[track.level].voteCounts.push(count);
       }
 
-      // Now create the charts only for each level
       for (const level in levels) {
         const backgroundColor = getRandomColor();
         if (!charts[level]) {
@@ -127,7 +118,7 @@ function ding() {
               backgroundColor: backgroundColor
             }]
           };
-          
+
           const config = {
             type: 'bar',
             data,
@@ -165,7 +156,6 @@ function ding() {
           const ctx = canvas.getContext('2d');
           charts[level] = new Chart(ctx, config);
         } else {
-          // Update existing chart if it already exists
           charts[level].data.labels = levels[level].labels;
           charts[level].data.datasets[0].data = levels[level].averages;
           charts[level].update();
@@ -173,13 +163,16 @@ function ding() {
       }
     }
 
-    // Create the track list and initialize voting buttons
     for (const track of tracks) {
       const div = document.createElement('div');
       div.innerHTML = `
         <br>
         <h3>- ${track.title} - ${track.level}</h3>
-        <audio controls src="${track.mp3}"></audio>
+        <div>
+          <iframe width="320" height="180" src="https://www.youtube.com/embed/${track.youtube}"
+            frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen></iframe>
+        </div>
         <div>
           ${[...Array(10)].map((_, i) =>
             `<button data-score="${i+1}" data-id="${track.id}">${i+1}</button>`
@@ -189,10 +182,8 @@ function ding() {
       `;
       container.appendChild(div);
 
-      // Initially update the results for each track
       updateResults(track.id);
 
-      // Add event listeners for voting
       div.querySelectorAll('button').forEach(btn => {
         btn.addEventListener('click', async () => {
           const score = btn.dataset.score;
@@ -211,8 +202,7 @@ function ding() {
               trackId: id,
               user: user.uid
             });
-            //alert(`Voted ${score} on ${track.title}`);
-            ding();  
+            ding();
             console.log(`Voted ${score} on ${track.title}`);
             updateResults(id);
           } catch (err) {
@@ -222,7 +212,6 @@ function ding() {
         });
       });
     }
-
   </script>
 </body>
 </html>
