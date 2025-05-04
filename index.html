@@ -50,25 +50,21 @@
     const chartsContainer = document.getElementById('charts-container');
     let charts = {};
 
-function beep(frequency = 660, duration = 200, volume = 0) {
+function ding() {
   const context = new (window.AudioContext || window.webkitAudioContext)();
   const oscillator = context.createOscillator();
   const gain = context.createGain();
 
-  oscillator.type = 'sine';
-  oscillator.frequency.value = frequency;
-
-  gain.gain.value = volume;
+  oscillator.type = 'triangle';           // Triangle wave sounds more like a ding
+  oscillator.frequency.setValueAtTime(880, context.currentTime); // A5 note
+  gain.gain.setValueAtTime(0.001, context.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.5, context.currentTime + 0.01); // Attack
+  gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.3); // Decay
 
   oscillator.connect(gain);
   gain.connect(context.destination);
-
-  oscillator.start();
-
-  setTimeout(() => {
-    oscillator.stop();
-    context.close();
-  }, duration);
+  oscillator.start(context.currentTime);
+  oscillator.stop(context.currentTime + 0.4); // Short ding
 }
 
     
@@ -208,7 +204,7 @@ function beep(frequency = 660, duration = 200, volume = 0) {
               user: user.uid
             });
             //alert(`Voted ${score} on ${track.title}`);
-            beep();  
+            ding();  
             console.log(`Voted ${score} on ${track.title}`);
             updateResults(id);
           } catch (err) {
