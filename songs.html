@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Custom MP3 Player</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+      padding: 20px;
+    }
+    #player {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 400px;
+      margin: auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    button {
+      margin: 5px;
+      padding: 10px 15px;
+      font-size: 16px;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      cursor: pointer;
+      margin: 5px 0;
+    }
+    li:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div id="player">
+    <h2>My MP3 Playlist</h2>
+    <audio id="audio" controls>
+      Your browser does not support the audio element.
+    </audio>
+    <div>
+      <button onclick="prevTrack()">⏮️ Previous</button>
+      <button onclick="nextTrack()">⏭️ Next</button>
+    </div>
+    <ul id="trackList"></ul>
+  </div>
+
+  <script>
+    const tracks = [
+      {
+        title: "Boos on the Loose - Luigi's Mansion",
+        url: "https://dodarchive.dwellingofduels.net/25-03-Free/06-Carington%20Swing-Luigis%20Mansion-Boos%20on%20the%20Loose%20Luigis%20Mansion%20Main%20Theme-DoD.mp3"
+      },
+      {
+        title: "Boos on the Loose - Luigi's Mansion (Alternate 1)",
+        url: "https://dodarchive.dwellingofduels.net/25-03-Free/06-Carington%20Swing-Luigis%20Mansion-Boos%20on%20the%20Loose%20Luigis%20Mansion%20Main%20Theme-DoD2.mp3"
+      },
+      {
+        title: "Boos on the Loose - Luigi's Mansion (Alternate 2)",
+        url: "https://dodarchive.dwellingofduels.net/25-03-Free/06-Carington%20Swing-Luigis%20Mansion-Boos%20on%20the%20Loose%20Luigis%20Mansion%20Main%20Theme-DoD3.mp3"
+      }
+    ];
+
+    let currentTrack = 0;
+    const audio = document.getElementById('audio');
+    const trackList = document.getElementById('trackList');
+
+    function loadTrack(index) {
+      if (index >= 0 && index < tracks.length) {
+        audio.src = tracks[index].url;
+        audio.play();
+        highlightTrack(index);
+      }
+    }
+
+    function nextTrack() {
+      currentTrack = (currentTrack + 1) % tracks.length;
+      loadTrack(currentTrack);
+    }
+
+    function prevTrack() {
+      currentTrack = (currentTrack - 1 + tracks.length) % tracks.length;
+      loadTrack(currentTrack);
+    }
+
+    function highlightTrack(index) {
+      const items = trackList.getElementsByTagName('li');
+      for (let i = 0; i < items.length; i++) {
+        items[i].style.fontWeight = i === index ? 'bold' : 'normal';
+      }
+    }
+
+    // Initialize track list
+    tracks.forEach((track, index) => {
+      const li = document.createElement('li');
+      li.textContent = track.title;
+      li.onclick = () => {
+        currentTrack = index;
+        loadTrack(index);
+      };
+      trackList.appendChild(li);
+    });
+
+    // Load the first track
+    loadTrack(currentTrack);
+  </script>
+</body>
+</html>
