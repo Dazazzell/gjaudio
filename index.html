@@ -20,17 +20,7 @@
 <body>
   <h2>YouTube GJ Tracks</h2>
 
-  <!-- Login/Register Form -->
-  <div id="auth-section">
-    <h3>Login or Register</h3>
-    <input type="email" id="auth-email" placeholder="Email"><br><br>
-    <input type="password" id="auth-password" placeholder="Password"><br><br>
-    <button id="login-btn">Login</button>
-    <button id="register-btn">Register</button>
-  </div>
-
-  <!-- Add Track Form (shown only if logged in) -->
-  <form id="add-track-form" style="display:none;">
+  <form id="add-track-form">
     <h3>Add New Track</h3>
     <label>Track Title <input type="text" id="title" size="60" /></label><br><br>
     <label>YouTube Video ID https://youtu.be/<b>LHq9Z0_UaDE</b> <input type="text" id="youtube" size="60" /></label><br><br>
@@ -56,12 +46,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import { getFirestore, doc, setDoc, collection, query, where, getDocs, getDoc, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-    import {
-      getAuth,
-      createUserWithEmailAndPassword,
-      signInWithEmailAndPassword,
-      onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDp_cESC1PrXHxnTC2JMRdR928KXXwEvOw",
@@ -75,44 +60,11 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
-
-    // Auth state check
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        document.getElementById('auth-section').style.display = 'none';
-        document.getElementById('add-track-form').style.display = 'block';
-        loadTracks(); // safe to load tracks once authenticated
-      } else {
-        document.getElementById('auth-section').style.display = 'block';
-        document.getElementById('add-track-form').style.display = 'none';
-      }
-    });
-
-    // Login/Register
-    document.getElementById('login-btn').onclick = async () => {
-      const email = document.getElementById('auth-email').value;
-      const password = document.getElementById('auth-password').value;
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-      } catch (err) {
-        alert("Login error: " + err.message);
-      }
-    };
-
-    document.getElementById('register-btn').onclick = async () => {
-      const email = document.getElementById('auth-email').value;
-      const password = document.getElementById('auth-password').value;
-      try {
-        await createUserWithEmailAndPassword(auth, email, password);
-      } catch (err) {
-        alert("Register error: " + err.message);
-      }
-    };
+    await signInAnonymously(auth);
 
     const container = document.getElementById('track-list');
     const chartsContainer = document.getElementById('charts-container');
     let charts = {};
-    let tracks = [];
 
     function getRandomColor() {
       const r = Math.floor(Math.random() * 200);
@@ -136,61 +88,12 @@
       oscillator.stop(context.currentTime + 0.4);
     }
 
-    async function loadTracks() {
-      container.innerHTML = '';
-      chartsContainer.innerHTML = '';
-      charts = {};
-      tracks = [];
-
-      const snapshot = await getDocs(collection(db, "tracks"));
-      snapshot.forEach(doc => {
-        tracks.push({ id: doc.id, ...doc.data() });
-      });
-
-      for (const track of tracks) {
-        const div = document.createElement('div');
-        div.innerHTML = `
-          <br>
-          <h3>- ${track.title} (${track.level})</h3>
-          <iframe src="https://www.youtube.com/embed/${track.youtube}" frameborder="0" allowfullscreen></iframe>
-          <div>
-            ${[...Array(10)].map((_, i) =>
-              `<button data-score="${i+1}" data-id="${track.id}">${i+1}</button>`
-            ).join(' ')}
-          </div>
-          <p id="result-${track.id}">Loading results...</p>
-        `;
-        container.appendChild(div);
-        updateResults(track.id);
-
-        div.querySelectorAll('button').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            const score = btn.dataset.score;
-            const id = btn.dataset.id;
-            const user = auth.currentUser;
-            if (!user) {
-              alert("User not signed in");
-              return;
-            }
-            const voteRef = doc(db, "votes", `${user.uid}_${id}`);
-            try {
-              await setDoc(voteRef, {
-                score: Number(score),
-                trackId: id,
-                user: user.uid
-              });
-              ding();
-              updateResults(id);
-            } catch (err) {
-              console.error("Error saving vote:", err);
-              alert("Failed to vote.");
-            }
-          });
-        });
-      }
-
-      updateChart();
-    }
+    // Load tracks from Firestore
+    const tracks = [];
+    const snapshot = await getDocs(collection(db, "tracks"));
+    snapshot.forEach(doc => {
+      tracks.push({ id: doc.id, ...doc.data() });
+    });
 
     async function updateResults(trackId) {
       const q = query(collection(db, "votes"), where("trackId", "==", trackId));
@@ -203,6 +106,7 @@
       const avg = count > 0 ? (total / count).toFixed(2) : null;
       document.getElementById(`result-${trackId}`).textContent =
         avg ? `Average score: ${avg} (${count} vote${count > 1 ? 's' : ''})` : "No votes yet";
+      updateChart();
     }
 
     async function updateChart() {
@@ -266,7 +170,7 @@
           };
 
           const chartContainer = document.createElement('div');
-          chartContainer.innerHTML = `<br><h2>${level} Level</h2>`;
+          chartContainer.innerHTML = `<br><h2>${level.charAt(0).toUpperCase() + level.slice(1)} Level</h2>`;
           const canvas = document.createElement('canvas');
           chartContainer.appendChild(canvas);
           chartsContainer.appendChild(chartContainer);
@@ -281,30 +185,78 @@
       }
     }
 
-    document.getElementById('add-track-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const title = document.getElementById('title').value.trim();
-      const youtube = document.getElementById('youtube').value.trim();
-      const level = document.getElementById('level').value;
-      if (!title || !youtube || !level) return;
+    for (const track of tracks) {
+      const div = document.createElement('div');
+      div.innerHTML = `
+        <br>
+        <h3>- ${track.title} (${track.level})</h3>
+        <iframe src="https://www.youtube.com/embed/${track.youtube}" frameborder="0" allowfullscreen></iframe>
+        <div>
+          ${[...Array(10)].map((_, i) =>
+            `<button data-score="${i+1}" data-id="${track.id}">${i+1}</button>`
+          ).join(' ')}
+        </div>
+        <p id="result-${track.id}">Loading results...</p>
+      `;
+      container.appendChild(div);
+      updateResults(track.id);
 
-      const oEmbedURL = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${youtube}&format=json`;
-      try {
-        const response = await fetch(oEmbedURL);
-        if (!response.ok) throw new Error("Invalid YouTube ID");
-
-        await addDoc(collection(db, "tracks"), {
-          title,
-          youtube,
-          level
+      div.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const score = btn.dataset.score;
+          const id = btn.dataset.id;
+          const user = auth.currentUser;
+          if (!user) {
+            alert("User not signed in");
+            return;
+          }
+          const voteRef = doc(db, "votes", `${user.uid}_${id}`);
+          try {
+            await setDoc(voteRef, {
+              score: Number(score),
+              trackId: id,
+              user: user.uid
+            });
+            ding();
+            updateResults(id);
+          } catch (err) {
+            console.error("Error saving vote:", err);
+            alert("Failed to vote.");
+          }
         });
-        alert("Track added!");
-        loadTracks();
-      } catch (err) {
-        console.error("YouTube validation failed:", err);
-        alert("Invalid YouTube ID. Please double-check the link.");
-      }
+      });
+    }
+
+    // Add new track form handler
+    document.getElementById('add-track-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const title = document.getElementById('title').value.trim();
+  const youtube = document.getElementById('youtube').value.trim();
+  const level = document.getElementById('level').value;
+  if (!title || !youtube || !level) {
+    //alert("All fields are required.");
+    return;
+  }
+
+  // Validate YouTube ID using oEmbed
+  const oEmbedURL = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${youtube}&format=json`;
+  try {
+    const response = await fetch(oEmbedURL);
+    if (!response.ok) throw new Error("Invalid YouTube ID");
+
+    // Proceed to add track
+    await addDoc(collection(db, "tracks"), {
+      title,
+      youtube,
+      level
     });
+    alert("Track added!");
+    location.reload();
+  } catch (err) {
+    console.error("YouTube validation failed:", err);
+    alert("Invalid YouTube ID. Please double-check the link.");
+  }
+});
 
   </script>
 </body>
