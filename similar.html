@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Audio Similarity Checker</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; }
+    button { margin: 1rem 0; }
+    #result { margin-top: 1rem; font-size: 1.2rem; }
+  </style>
+</head>
+<body>
+  <h1>Audio Similarity Checker</h1>
+
+  <input type="file" id="mp3Input" accept="audio/mp3" />
+  <br>
+  <button id="recordBtn">Start Recording</button>
+  <button id="compareBtn" disabled>Compare Audio</button>
+
+  <p id="result">Similarity: --%</p>
+
+  <script>
+    let recordedBuffer = null;
+    let mp3Buffer = null;
+    let recorder;
+    let audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Record mic audio
+    document.getElementById('recordBtn').onclick = async () => {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recorder = new MediaRecorder(stream);
+
+      const chunks = [];
+      recorder.ondataavailable = e => chunks.push(e.data);
+      recorder.onstop = async () => {
+        const blob = new Blob(chunks);
+        const arrayBuffer = await blob.arrayBuffer();
+        recordedBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        document.getElementById('compareBtn').disabled = !(!recordedBuffer || !mp3Buffer);
+      };
+
+      recorder.start();
+      document.getElementById('recordBtn').textContent = 'Stop Recording';
+      document.getElementById('recordBtn').onclick = () => {
+        recorder.stop();
+        document.getElementById('recordBtn').textContent = 'Start Recording';
+      };
+    };
+
+    // Load MP3
+    document.getElementById('mp3Input').onchange = async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const arrayBuffer = await file.arrayBuffer();
+        mp3Buffer = await audioContext.decodeAudioData(arrayBuffer);
+        document.getElementById('compareBtn').disabled = !(!recordedBuffer || !mp3Buffer);
+      }
+    };
+
+    // Simple comparison using average frequency magnitude
+    function computeAverageFrequency(buffer) {
+      const source = audioContext.createBufferSource();
+      source.buffer = buffer;
+
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 2048;
+
+      source.connect(analyser);
+      analyser.connect(audioContext.destination);
+
+      const freqData = new Uint8Array(analyser.frequencyBinCount);
+      source.start();
+
+      return new Promise(resolve => {
+        setTimeout(() => {
+          analyser.getByteFrequencyData(freqData);
+          const avg = freqData.reduce((a, b) => a + b, 0) / freqData.length;
+          resolve(avg);
+        }, 500); // Wait for playback to collect freq data
+      });
+    }
+
+    document.getElementById('compareBtn').onclick = async () => {
+      const micAvg = await computeAverageFrequency(recordedBuffer);
+      const mp3Avg = await computeAverageFrequency(mp3Buffer);
+
+      const diff = Math.abs(micAvg - mp3Avg);
+      const similarity = Math.max(0, 100 - diff); // very naive similarity
+
+      document.getElementById('result').textContent = `Similarity: ${similarity.toFixed(2)}%`;
+    };
+  </script>
+</body>
+</html>
